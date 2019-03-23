@@ -1,0 +1,6 @@
+input/
+output/
+features/*.feather
+importances/
+logs/*.log
+notebooks/
