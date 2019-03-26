@@ -26,7 +26,7 @@ class KnnFeatures():
         res = np.empty((len(X), CLASS_NUM * k))
         kf = StratifiedKFold(n_splits=folds, shuffle=True)
 
-        for fold_, (train_index, test_index) in enumerate(kf.split(X), y):
+        for fold_, (train_index, test_index) in enumerate(kf.split(X, y)):
             print("fold {}".format(fold_ + 1))
             start = time.time()
             X_train, X_test = X[train_index], X[test_index]
@@ -43,15 +43,15 @@ class KnnFeatures():
                     )])
                     features = np.append(features, feat, axis=0)
             res[test_index] = features.T
-            message = """fold {f}\ntime {t}""".format(f=fold_ + 1, t=time.time() - start)
+            message = """fold {f}\ntime {t}[min]""".format(f=fold_ + 1, t=(time.time() - start) / 60)
             self.send_message(message)
         return res
 
 
 if __name__ == "__main__":
     print("===== data loading =====")
-    df_train = pd.read_csv("./data/input/train.csv.zip")
-    df_test = pd.read_csv("./data/input/test.csv.zip")
+    df_train = pd.read_csv("./data/input/train.csv")
+    df_test = pd.read_csv("./data/input/test.csv")
     print("===== data loaded =====")
 
     X = df_train[df_train.columns[2:]].values

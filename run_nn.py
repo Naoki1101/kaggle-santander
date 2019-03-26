@@ -4,8 +4,11 @@ import datetime
 import logging
 import argparse
 import json
+import time
+import sys
 
 from utils import load_datasets, load_target
+from utils.line_notification import send_message
 from models.nn import MLPNet
 
 from sklearn.metrics import roc_auc_score
@@ -20,6 +23,7 @@ from torch.autograd import Variable
 import warnings
 warnings.filterwarnings('ignore')
 
+s = time.time()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', default='./configs/default.json')
@@ -106,7 +110,7 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all)
     oof[val_idx] = outputs
 
     auc = roc_auc_score(y_val.values, outputs)
-    metrics.append(auc)
+    metrics.append(round(auc, 5))
     print("valid's_loss: %.4f" % auc)
     logging.debug("valid's_loss: %.4f" % auc)
 
@@ -116,7 +120,10 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all)
     predictions += outputs.numpy().reshape(X_test.shape[0]) / folds.n_splits
 # NN ==========================================================================
 
-print("OOF : {}".format(roc_auc_score(y_train_all, oof)))
+score = np.mean(metrics)
+
+print("CV : {}".format(score))
+logging.debug("CV : {}".format(score))
 
 predictions = (predictions - min(predictions)) / (np.max(predictions) - np.min(predictions))
 
@@ -126,6 +133,15 @@ sub = pd.DataFrame(pd.read_csv('./data/input/test.csv')[ID_name])
 sub[target_name] = predictions
 
 sub.to_csv(
-    './data/output/sub_nn_{0:%Y%m%d%H%M%S}_{1}.csv'.format(now, np.mean(metrics)),
+    './data/output/sub_nn_{0:%Y%m%d%H%M%S}_{1}.csv'.format(now, score),
     index=False
 )
+
+e = time.time()
+
+message = """{f}
+cv: {cv:.4f}
+scores: {s}
+time: {t:.2f}[min]""".format(f=sys.argv[0], cv=score, s=metrics, t=(e - s) / 60)
+
+send_message(message)

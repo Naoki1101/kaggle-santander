@@ -1,8 +1,5 @@
 import torch.nn as nn
 
-import warnings
-warnings.filterwarnings('ignore')
-
 
 class MLPNet(nn.Module):
     def __init__(self, input_size):

@@ -1,7 +1,6 @@
 import time
 import pandas as pd
 from contextlib import contextmanager
-import requests
 
 
 @contextmanager
@@ -24,12 +23,3 @@ def load_target(target_name):
     train = pd.read_csv('./data/input/train.csv')
     y_train = train[target_name]
     return y_train
-
-
-def send_line_notification(message):
-    line_token = 'u3Q53p9qbMSUYfQz2rZTvFSA3BwbpTblUPI3YDPHg70'
-    endpoint = 'https://notify-api.line.me/api/notify'
-    message = "\n{}".format(message)
-    payload = {'message': message}
-    headers = {'Authorization': 'Bearer {}'.format(line_token)}
-    requests.post(endpoint, data=payload, headers=headers)

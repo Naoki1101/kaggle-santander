@@ -12,9 +12,7 @@ import sys
 
 from utils import load_datasets, load_target
 from utils.line_notification import send_message
-from logs.logger import log_best
-from models.lgbm import train_and_predict
-from importances.save_importances import save
+from models.knn import knn_train_and_predict
 from scripts.sampling import downsampling
 
 import warnings
@@ -27,7 +25,7 @@ options = parser.parse_args()
 config = json.load(open(options.config))
 
 now = datetime.datetime.now()
-filename = 'log_lgbm_{0:%Y%m%d%H%M%S}.log'.format(now)
+filename = 'log_knn_{0:%Y%m%d%H%M%S}.log'.format(now)
 logging.basicConfig(
     filename='./logs/' + filename, level=logging.DEBUG
 )
@@ -45,7 +43,7 @@ logging.debug(X_train_all.shape)
 y_preds = []
 models = []
 
-lgbm_params = config['lgbm_params']
+knn_params = config['knn_params']
 
 folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=1000)
 
@@ -57,24 +55,15 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all.
     )
     y_train, y_valid = y_train_all[trn_idx], y_train_all[val_idx]
 
-    logging.debug("*DOWN SAMPLING*")
-    X_train, y_train = downsampling(X_train, y_train, fold_)
+    # logging.debug("*DOWN SAMPLING*")
+    # X_train, y_train = downsampling(X_train, y_train, fold_)
 
-    y_pred, model = train_and_predict(
-        X_train, X_valid, y_train, y_valid, X_test, lgbm_params
+    y_pred, model = knn_train_and_predict(
+        X_train, X_valid, y_train, y_valid, X_test, knn_params
     )
 
     y_preds.append(y_pred)
     models.append(model)
-
-    log_best(model, config['loss'])
-
-try:
-    save(models, X_train.columns, now)
-    print("===Saved importances===")
-    logging.debug('===Saved importances===')
-except:
-    pass
 
 scores = [
     round(m.best_score['valid_1'][config['loss']], 5) for m in models
@@ -96,7 +85,7 @@ y_sub = sum(y_preds) / len(y_preds)
 sub[target_name] = y_sub
 
 sub.to_csv(
-    './data/output/sub_lgbm_{0:%Y%m%d%H%M%S}_{1}.csv'.format(now, score),
+    './data/output/sub_knn_{0:%Y%m%d%H%M%S}_{1}.csv'.format(now, score),
     index=False
 )
 
