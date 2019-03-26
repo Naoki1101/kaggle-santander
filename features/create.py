@@ -1392,7 +1392,7 @@ class var_158_div_var_195(Feature):
         self.test['var_158_div_var_195'] = test['var_158'] / test['var_195']
 
 
-class TSNE(Feature):
+class tsne(Feature):
     def create_features(self):
         whole = pd.concat(
             [train.drop(['ID_code', 'target'], axis=1), test.drop(['ID_code'], axis=1)],
@@ -1405,7 +1405,7 @@ class TSNE(Feature):
             self.test[col_] = tsne_array[len(test):, i]
 
 
-class KNN(Feature):
+class knn(Feature):
     def _distance(self, a, b):
         dist = np.linalg.norm(b - a)
         return dist
