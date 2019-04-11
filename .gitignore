@@ -3,3 +3,5 @@ output/
 features/var_*.feather
 logs/*.log
 notebooks/
+pict/
+.DS_Store
