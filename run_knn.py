@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import numpy as np
 import pandas as pd
 import datetime
 import logging
@@ -12,7 +13,7 @@ import sys
 
 from utils import load_datasets, load_target
 from utils.line_notification import send_message
-from models.knn import knn_train_and_predict
+from models.knn import knn_train_and_predict, save_features, normalize
 from scripts.sampling import downsampling
 
 import warnings
@@ -37,11 +38,14 @@ logging.debug(feats)
 target_name = config['target_name']
 
 X_train_all, X_test = load_datasets(feats)
+X_train_all, X_test = normalize(X_train_all, X_test)
 y_train_all = load_target(target_name)
 logging.debug(X_train_all.shape)
 
 y_preds = []
 models = []
+scores = []
+oof = np.zeros(len(X_train_all))
 
 knn_params = config['knn_params']
 
@@ -55,19 +59,21 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all.
     )
     y_train, y_valid = y_train_all[trn_idx], y_train_all[val_idx]
 
+    # print("*DOWN SAMPLING*")
     # logging.debug("*DOWN SAMPLING*")
     # X_train, y_train = downsampling(X_train, y_train, fold_)
 
-    y_pred, model = knn_train_and_predict(
-        X_train, X_valid, y_train, y_valid, X_test, knn_params
+    y_pred, model, val_auc, oof = knn_train_and_predict(
+        X_train, X_valid, y_train, y_valid, X_test, knn_params, oof
     )
+
+    print("valid_1's auc: %.4f" % val_auc)
+    logging.debug("valid_1's auc: %.4f" % val_auc)
 
     y_preds.append(y_pred)
     models.append(model)
+    scores.append(val_auc)
 
-scores = [
-    round(m.best_score['valid_1'][config['loss']], 5) for m in models
-]
 score = sum(scores) / len(scores)
 print('===CV scores===')
 print(scores)
@@ -82,6 +88,10 @@ sub = pd.DataFrame(pd.read_csv('./data/input/test.csv')[ID_name])
 
 y_sub = sum(y_preds) / len(y_preds)
 
+print("=== Save features ===")
+logging.debug("=== Save features ===")
+save_features(oof, y_sub, overwrite=True)
+
 sub[target_name] = y_sub
 
 sub.to_csv(
@@ -94,6 +104,6 @@ e = time.time()
 message = """{f}
 cv: {cv:.4f}
 scores: {s}
-time: {t:.2f} s""".format(f=sys.argv[0], cv=score, s=scores, t=e - s)
+time: {t:.2f}[min]""".format(f=sys.argv[0], cv=score, s=scores, t=(e - s) / 60)
 
 send_message(message)

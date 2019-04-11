@@ -3,13 +3,14 @@ import pandas as pd
 import datetime
 import logging
 import argparse
+import random
 import json
 import time
 import sys
 
 from utils import load_datasets, load_target
 from utils.line_notification import send_message
-from models.nn import MLPNet
+from models.nn import MLPNet, save_features, scaling
 
 from sklearn.metrics import roc_auc_score
 from sklearn.utils import shuffle
@@ -22,6 +23,8 @@ from torch.autograd import Variable
 
 import warnings
 warnings.filterwarnings('ignore')
+
+np.random.seed(1000)
 
 s = time.time()
 
@@ -54,6 +57,8 @@ learning_rate = nn_params['learning_rate']
 device = nn_params['device']
 
 net = MLPNet(X_train_all.shape[1]).to(device)
+print(net)
+logging.debug(net)
 
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(net.parameters(), lr=learning_rate)
@@ -101,8 +106,8 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all)
         val_auc = roc_auc_score(y_val, x_val_outputs)
 
         if (epoch + 1) % 5 == 0:
-            print("[%d]     training's auc: %.4f     valid_1's auc: %.4f" % (epoch + 1, train_auc, val_auc))
-            logging.debug("[%d]     training's auc: %.4f     valid_1's auc: %.4f" % (epoch + 1, train_auc, val_auc))
+            print("[%d]     training's auc: %.4f     valid's auc: %.4f" % (epoch + 1, train_auc, val_auc))
+            logging.debug("[%d]     training's auc: %.4f     valid's auc: %.4f" % (epoch + 1, train_auc, val_auc))
 
     x_val_var = Variable(torch.FloatTensor(x_val.values), requires_grad=True)
     with torch.no_grad():
@@ -111,8 +116,8 @@ for fold_, (trn_idx, val_idx) in enumerate(folds.split(X_train_all, y_train_all)
 
     auc = roc_auc_score(y_val.values, outputs)
     metrics.append(round(auc, 5))
-    print("valid's_loss: %.4f" % auc)
-    logging.debug("valid's_loss: %.4f" % auc)
+    print("valid's_auc: %.4f" % auc)
+    logging.debug("valid's_auc: %.4f" % auc)
 
     x_test_var = Variable(torch.FloatTensor(X_test.values), requires_grad=True)
     with torch.no_grad():
@@ -125,7 +130,11 @@ score = np.mean(metrics)
 print("CV : {}".format(score))
 logging.debug("CV : {}".format(score))
 
-predictions = (predictions - min(predictions)) / (np.max(predictions) - np.min(predictions))
+oof, predictions = scaling(oof, predictions)
+
+print("=== Save features ===")
+logging.debug("=== Save features ===")
+save_features(oof, predictions, overwrite=True)
 
 ID_name = config['ID_name']
 sub = pd.DataFrame(pd.read_csv('./data/input/test.csv')[ID_name])

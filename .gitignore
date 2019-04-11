@@ -1,6 +1,5 @@
 input/
 output/
 features/var_*.feather
-importances/
 logs/*.log
 notebooks/

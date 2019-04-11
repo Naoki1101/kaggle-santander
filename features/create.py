@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
-import time
 
 # from sklearn.manifold import TSNE
 from bhtsne import tsne
+import umap
+from scipy.sparse.csgraph import connected_components
+import matplotlib.cm as cm
 from sklearn.model_selection import StratifiedKFold
 
-from base import Feature, get_arguments, generate_features, sigmoid
+from base import Feature, get_arguments, generate_features, sigmoid, minmaxscale
 
 
 Feature.dir = 'features'
@@ -1392,10 +1394,159 @@ class var_158_div_var_195(Feature):
         self.test['var_158_div_var_195'] = test['var_158'] / test['var_195']
 
 
-class tsne(Feature):
+class var_sum(Feature):
     def create_features(self):
+        self.train['var_sum'] = train[train.columns[2:]].sum(axis=1)
+        self.test['var_sum'] = test[test.columns[1:]].sum(axis=1)
+
+
+class var_mean(Feature):
+    def create_features(self):
+        self.train['var_mean'] = train[train.columns[2:]].mean(axis=1)
+        self.test['var_mean'] = test[test.columns[1:]].values.mean(axis=1)
+
+
+class var_std(Feature):
+    def create_features(self):
+        self.train['var_std'] = train[train.columns[2:]].values.std(axis=1)
+        self.test['var_std'] = test[test.columns[1:]].values.std(axis=1)
+
+
+class var_skew(Feature):
+    def create_features(self):
+        self.train['var_skew'] = train[train.columns[2:]].skew(axis=1)
+        self.test['var_skew'] = test[test.columns[1:]].skew(axis=1)
+
+
+class var_kurt(Feature):
+    def create_features(self):
+        self.train['var_kurt'] = train[train.columns[2:]].kurtosis(axis=1)
+        self.test['var_kurt'] = test[test.columns[1:]].kurtosis(axis=1)
+
+
+class var_med(Feature):
+    def create_features(self):
+        self.train['var_med'] = train[train.columns[2:]].median(axis=1)
+        self.test['var_med'] = test[test.columns[1:]].median(axis=1)
+
+
+class var_min(Feature):
+    def create_features(self):
+        self.train['var_min'] = train[train.columns[2:]].min(axis=1)
+        self.test['var_min'] = test[test.columns[1:]].min(axis=1)
+
+
+class var_argmin(Feature):
+    def create_features(self):
+        self.train['var_argmin'] = np.argmin(train[train.columns[2:]].values, axis=1)
+        self.test['var_argmin'] = np.argmin(test[test.columns[1:]].values, axis=1)
+
+
+class var_max(Feature):
+    def create_features(self):
+        self.train['var_max'] = train[train.columns[2:]].max(axis=1)
+        self.test['var_max'] = test[test.columns[1:]].max(axis=1)
+
+
+class var_argmax(Feature):
+    def create_features(self):
+        self.train['var_argmax'] = np.argmax(train[train.columns[2:]].values, axis=1)
+        self.test['var_argmax'] = np.argmax(test[test.columns[1:]].values, axis=1)
+
+
+class var_ma(Feature):
+    def create_features(self):
+        self.train['var_ma'] = train[train.columns[2:]].apply(lambda x: np.ma.average(x), axis=1)
+        self.test['var_ma'] = test[test.columns[1:]].apply(lambda x: np.ma.average(x), axis=1)
+
+
+class var_perc_1(Feature):
+    def create_features(self):
+        self.train['var_perc_1'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 1), axis=1)
+        self.test['var_perc_1'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 1), axis=1)
+
+
+class var_perc_2(Feature):
+    def create_features(self):
+        self.train['var_perc_2'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 2), axis=1)
+        self.test['var_perc_2'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 2), axis=1)
+
+
+class var_perc_5(Feature):
+    def create_features(self):
+        self.train['var_perc_5'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 5), axis=1)
+        self.test['var_perc_5'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 5), axis=1)
+
+
+class var_perc_10(Feature):
+    def create_features(self):
+        self.train['var_perc_10'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 10), axis=1)
+        self.test['var_perc_10'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 10), axis=1)
+
+
+class var_perc_25(Feature):
+    def create_features(self):
+        self.train['var_perc_25'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 25), axis=1)
+        self.test['var_perc_25'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 25), axis=1)
+
+
+class var_perc_50(Feature):
+    def create_features(self):
+        self.train['var_perc_50'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 50), axis=1)
+        self.test['var_perc_50'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 50), axis=1)
+
+
+class var_perc_60(Feature):
+    def create_features(self):
+        self.train['var_perc_60'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 60), axis=1)
+        self.test['var_perc_60'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 60), axis=1)
+
+
+class var_perc_75(Feature):
+    def create_features(self):
+        self.train['var_perc_75'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 75), axis=1)
+        self.test['var_perc_75'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 75), axis=1)
+
+
+class var_perc_85(Feature):
+    def create_features(self):
+        self.train['var_perc_85'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 85), axis=1)
+        self.test['var_perc_85'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 85), axis=1)
+
+
+class var_perc_95(Feature):
+    def create_features(self):
+        self.train['var_perc_95'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 95), axis=1)
+        self.test['var_perc_95'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 95), axis=1)
+
+
+class var_perc_99(Feature):
+    def create_features(self):
+        self.train['var_perc_99'] = train[train.columns[2:]].apply(lambda x: np.percentile(x, 99), axis=1)
+        self.test['var_perc_99'] = test[test.columns[1:]].apply(lambda x: np.percentile(x, 99), axis=1)
+
+
+class mix_flg(Feature):
+    def create_features(self):
+        oof = pd.read_feather("features/lgbm_train.feather")
+        pred = pd.read_feather("features/lgbm_test.feather")
+
+        self.train['mix_zone_flg'] = np.where(
+            (oof.lgbm_pred.values > 0.1) & (oof.lgbm_pred < 0.2), 1, 0
+        )
+        self.test['mix_zone_flg'] = np.where(
+            (pred.lgbm_pred.values > 0.1) & (pred.lgbm_pred < 0.2), 1, 0
+        )
+
+
+class tsne_features(Feature):
+    def create_features(self):
+        feats = [
+            'var_13', 'var_108', 'var_33', 'var_184', 'var_165', 'var_9', 'var_169', 'var_166', 'var_127', 'var_76',
+            'var_6', 'var_22', 'var_1', 'var_133', 'var_133', 'var_99', 'var_80', 'var_34', 'var_110', 'var_177'
+        ]
         whole = pd.concat(
-            [train.drop(['ID_code', 'target'], axis=1), test.drop(['ID_code'], axis=1)],
+            [train[feats], test[feats]],
             axis=0).values
 
         tsne_array = tsne(data=whole, dimensions=3, perplexity=10.0, theta=0.5, rand_seed=1000)
@@ -1405,7 +1556,26 @@ class tsne(Feature):
             self.test[col_] = tsne_array[len(test):, i]
 
 
-class knn(Feature):
+class umap_features(Feature):
+    def create_features(self):
+        feats = [
+            'var_13', 'var_108', 'var_33', 'var_184', 'var_165', 'var_9', 'var_169', 'var_166', 'var_127', 'var_76',
+            'var_6', 'var_22', 'var_1', 'var_133', 'var_133', 'var_99', 'var_80', 'var_34', 'var_110', 'var_177'
+        ]
+        whole = pd.concat(
+            [train[feats], test[feats]],
+            axis=0).values
+
+        umap_array = umap.UMAP(
+            n_neighbors=10, min_dist=0.2, n_components=2, metric='euclidean', random_state=1000
+        ).fit_transform(whole)
+        for i in range(umap_array.shape[1]):
+            col_ = 'UMAP_{}'.format(i + 1)
+            self.train[col_] = tsne_array[:len(train), i]
+            self.test[col_] = tsne_array[len(test):, i]
+
+
+class neighbor_features(Feature):
     def _distance(self, a, b):
         dist = np.linalg.norm(b - a)
         return dist
@@ -1461,10 +1631,24 @@ class knn(Feature):
 
         tr_res, te_res = self.knn_extract(X, y, Z, k=1, folds=5)
         for i in range(tr_res.shape[1]):
-            col_name = "KNN_feat_{}".format(i+1)
+            col_name = "KNN_feat_{}".format(i + 1)
             self.train[col_name] = tr_res[:, i]
             self.test[col_name] = te_res[:, i]
 
+
+class high_imp_umap_features(Feature):
+    def create_features(self):
+        feats = [
+            "var_81", "var_139", "var_53", "var_110", "var_109"
+        ]
+        whole = pd.concat([train[feats], test[feats]], axis=0).values
+        umap_array = umap.UMAP(
+            n_neighbors=10, min_dist=0.2, n_components=2, metric='euclidean', random_state=1000
+        ).fit_transform(whole)
+        for i in range(umap_array.shape[1]):
+            col_ = 'high_imp_UMAP_{j}'.format(j=i + 1)
+            self.train[col_] = umap_array[:len(train), i]
+            self.test[col_] = umap_array[len(test):, i]
 
 
 if __name__ == '__main__':

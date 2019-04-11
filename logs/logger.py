@@ -7,6 +7,11 @@ def log_best(model, metric):
     logging.debug(model.best_score['valid_1'][metric])
 
 
+def cb_log_best(model, metric):
+    logging.debug(model.best_iteration_)
+    logging.debug(model.best_score_['validation_0'][metric])
+
+
 def log_evaluation(logger, period=1, show_stdv=True, level=logging.DEBUG):
     def _callback(env):
         if period > 0 and env.evaluation_result_list \

@@ -1,8 +1,9 @@
 import pandas as pd
 
 alg = [
-    'tsne',
-    'knn'
+    #'tsne_features',
+    'neighbor_features',
+    # 'umap_features'
 ]
 
 target = [

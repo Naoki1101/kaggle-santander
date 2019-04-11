@@ -7,8 +7,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 import argparse
 import json
+import pandas as pd
+import numpy as np
 
 from utils import load_datasets, load_target
+from models.lgbm import remove_row
 
 import optuna
 import lightgbm as lgb
@@ -23,11 +26,11 @@ config = json.load(open(options.config))
 
 now = datetime.datetime.now()
 logging.basicConfig(
-    filename='./logs/optuna_{0:%Y%m%d%H%M%S}.log'.format(now), level=logging.DEBUG
+    filename='./logs/optuna_lgbm_{0:%Y%m%d%H%M%S}.log'.format(now), level=logging.DEBUG
 )
-logging.debug('./logs/optuna_{0:%Y%m%d%H%M%S}.log'.format(now))
+logging.debug('./logs/optuna_lgbm_{0:%Y%m%d%H%M%S}.log'.format(now))
 
-feats = config['features']
+feats = config['features'] + config['stacking_feats']
 logging.debug(feats)
 
 target_name = config['target_name']
@@ -36,6 +39,12 @@ X_train_all, X_test = load_datasets(feats)
 y_train_all = load_target(target_name)
 logging.debug(X_train_all.shape)
 
+old_oof = pd.read_feather("./features/lgbm_train.feather")
+drop_idx = np.where((old_oof.lgbm_pred.values >= 0.09) & (old_oof.lgbm_pred.values <= 0.13))[0]
+
+print("=== remove several rows===")
+logging.debug("=== remove several rows===")
+X_train_all, y_train_all = remove_row(X_train_all, y_train_all, drop_idx)
 
 def objective(trial):
     train_x, test_x, train_y, test_y = train_test_split(X_train_all, y_train_all, test_size=0.20, random_state=4590)
@@ -52,11 +61,11 @@ def objective(trial):
         'bagging_fraction': trial.suggest_loguniform('bagging_fraction', 0.8, 0.95),
         'bagging_seed': 11,
         'boosting_type': 'gbdt',
-        'num_leaves': trial.suggest_int('num_leaves', 10, 100),
-        'learning_rate': 0.09,
-        'min_child_samples': trial.suggest_int('min_child_samples', 20, 100),
+        'num_leaves': trial.suggest_int('num_leaves', 10, 1000),
+        'learning_rate': 0.01,
+        'min_child_samples': trial.suggest_int('min_child_samples', 20, 1000),
         'min_data_in_leaf': trial.suggest_int('min_data_in_leaf', 10, 1000),
-        'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-2, 1.0)
+        'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-3, 1.0)
     }
 
     gbm = lgb.train(param, dtrain, num_round, valid_sets=[dtrain, dval], verbose_eval=100, early_stopping_rounds=100)
@@ -76,8 +85,8 @@ trial = study.best_trial
 logging.debug('Best trial:')
 logging.debug(study.best_trial)
 
-print('  Value: {}'.format(trial.value))
-logging.debug('  Value: {}'.format(trial.value))
+print('  Value: {}'.format(1 - trial.value))
+logging.debug('  Value: {}'.format(1 - trial.value))
 
 print('  Params: ')
 logging.debug('  Params: ')

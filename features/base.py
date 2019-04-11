@@ -74,3 +74,9 @@ class Feature(metaclass=ABCMeta):
 
 def sigmoid(values):
     return 1 / (1 + np.exp(-1 * values))
+
+
+def minmaxscale(values):
+    min_ = np.min(values)
+    max_ = np.max(values)
+    return (values - min_) / (max_ - min_) + 0.01
