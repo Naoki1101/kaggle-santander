@@ -2,4 +2,4 @@
 
 https://www.kaggle.com/c/santander-customer-transaction-prediction
 
-3,990位
+3,990/9,038位
