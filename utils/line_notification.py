@@ -1,7 +1,7 @@
 import requests
 
 def send_message(message):
-    line_token = 'QpiJEDvadb4HAEhm0xiRkij6VVFcFiXKFxoExA1OlJw'
+    line_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     endpoint = 'https://notify-api.line.me/api/notify'
     message = "\n{}".format(message)
     payload = {'message': message}
